@@ -4,17 +4,18 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import Loader from '@/components/Loader'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/lib/auth-context'
 
 interface User { id: number; full_name: string; email: string; role: string }
 interface Tutor { id: number; subjects: string[]; user: User; is_verified: boolean }
 
-const AllTutors: React.FC = () => {
+interface Props {
+  token: string
+}
+
+const AllTutors: React.FC<Props> = ({ token }) => {
   const [tutors, setTutors] = useState<Tutor[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<{ [key: number]: boolean }>({})
-
-  const { token, isLoading: authLoading } = useAuth() // ✅ use token from auth-context
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
   const loadTutors = async () => {
@@ -22,7 +23,7 @@ const AllTutors: React.FC = () => {
     setLoading(true)
     try {
       const res = await axios.get(`${API_URL}/api/admin/all-tutors`, {
-        headers: { Authorization: `Bearer ${token}` }, // ✅ consistent with login
+        headers: { Authorization: `Bearer ${token}` },
       })
       setTutors(res.data.tutors || [])
     } catch (err: any) {
@@ -51,10 +52,10 @@ const AllTutors: React.FC = () => {
   }
 
   useEffect(() => {
-    if (token) loadTutors() // ✅ wait until token is available
+    loadTutors()
   }, [token])
 
-  if (loading || authLoading) return <Loader />
+  if (loading) return <Loader />
 
   return (
     <div className="bg-white rounded-lg shadow p-4">

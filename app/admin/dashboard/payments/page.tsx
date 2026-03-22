@@ -2,10 +2,8 @@
 
 import React, { useEffect, useState } from 'react'
 import Loader from '@/components/Loader'
-import { useAuth } from '@/lib/auth-context'
-import { fetchPayments } from "../../../api/adminApi" // same path
+import { fetchPayments } from '../../../api/adminApi'
 
-// Define Payment interface
 interface Payment {
   id: number
   session_id: number
@@ -15,21 +13,27 @@ interface Payment {
   created_at: string
 }
 
-const Payments: React.FC = () => {
+interface Props {
+  token: string
+}
+
+const Payments: React.FC<Props> = ({ token }) => {
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
-
-  const { token, isLoading: authLoading } = useAuth()
 
   const loadPayments = async () => {
     if (!token) return alert('No token found. Please login again.')
     setLoading(true)
     try {
-      const data = await fetchPayments(token, 1) // assuming userId=1 for demo
+      const data = await fetchPayments(token, 1) // replace 1 with actual userId if needed
       setPayments(data || [])
     } catch (err: any) {
       console.error('Failed to fetch payments:', err)
-      alert(err.response?.status === 401 ? 'Unauthorized. Please login again.' : 'Failed to fetch payments')
+      alert(
+        err.response?.status === 401
+          ? 'Unauthorized. Please login again.'
+          : 'Failed to fetch payments'
+      )
     } finally {
       setLoading(false)
     }
@@ -39,7 +43,7 @@ const Payments: React.FC = () => {
     if (token) loadPayments()
   }, [token])
 
-  if (loading || authLoading) return <Loader />
+  if (loading) return <Loader />
 
   return (
     <div className="bg-white rounded-lg shadow p-4">
@@ -60,9 +64,13 @@ const Payments: React.FC = () => {
             {payments.map(p => (
               <tr key={p.id} style={trStyle}>
                 <td className={tdStyle}>{p.session_id}</td>
-                <td className={tdStyle}>{p.amount} {p.currency}</td>
+                <td className={tdStyle}>
+                  {p.amount} {p.currency}
+                </td>
                 <td className={tdStyle}>{p.status}</td>
-                <td className={tdStyle}>{new Date(p.created_at).toLocaleString()}</td>
+                <td className={tdStyle}>
+                  {new Date(p.created_at).toLocaleString()}
+                </td>
               </tr>
             ))}
           </tbody>

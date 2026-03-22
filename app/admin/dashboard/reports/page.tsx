@@ -2,10 +2,8 @@
 
 import React, { useEffect, useState } from 'react'
 import Loader from '@/components/Loader'
-import { useAuth } from '@/lib/auth-context'
-import { fetchReports } from "../../../api/adminApi" // same path
+import { fetchReports } from '../../../api/adminApi'
 
-// Define Report interface
 interface Report {
   id: number
   reported_user: string
@@ -14,11 +12,13 @@ interface Report {
   created_at: string
 }
 
-const Reports: React.FC = () => {
+interface Props {
+  token: string
+}
+
+const Reports: React.FC<Props> = ({ token }) => {
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
-
-  const { token, isLoading: authLoading } = useAuth()
 
   const loadReports = async () => {
     if (!token) return alert('No token found. Please login again.')
@@ -28,7 +28,11 @@ const Reports: React.FC = () => {
       setReports(data || [])
     } catch (err: any) {
       console.error('Failed to fetch reports:', err)
-      alert(err.response?.status === 401 ? 'Unauthorized. Please login again.' : 'Failed to fetch reports')
+      alert(
+        err.response?.status === 401
+          ? 'Unauthorized. Please login again.'
+          : 'Failed to fetch reports'
+      )
     } finally {
       setLoading(false)
     }
@@ -38,7 +42,7 @@ const Reports: React.FC = () => {
     if (token) loadReports()
   }, [token])
 
-  if (loading || authLoading) return <Loader />
+  if (loading) return <Loader />
 
   return (
     <div className="bg-white rounded-lg shadow p-4">
