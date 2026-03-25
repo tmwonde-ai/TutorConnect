@@ -11,15 +11,9 @@ interface SessionTimerProps {
 }
 
 export function SessionTimer({ initialMinutes = 60, onTimeUp }: SessionTimerProps) {
-
   const [totalSeconds] = useState(initialMinutes * 60)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
-
-  // ✅ auto-start when component appears
-  useEffect(() => {
-    setIsRunning(true)
-  }, [])
 
   useEffect(() => {
 

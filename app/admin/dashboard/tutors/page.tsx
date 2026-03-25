@@ -4,18 +4,19 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import Loader from '@/components/Loader'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/lib/auth-context'
+import { CheckCircle, XCircle, Users } from 'lucide-react'
 
 interface User { id: number; full_name: string; email: string; role: string }
 interface Tutor { id: number; subjects: string[]; user: User; is_verified: boolean }
 
-interface Props {
-  token: string
-}
-
-const AllTutors: React.FC<Props> = ({ token }) => {
+const AllTutors: React.FC = () => {
   const [tutors, setTutors] = useState<Tutor[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<{ [key: number]: boolean }>({})
+
+  const { token, isLoading: authLoading } = useAuth()
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
   const loadTutors = async () => {
@@ -52,65 +53,91 @@ const AllTutors: React.FC<Props> = ({ token }) => {
   }
 
   useEffect(() => {
-    loadTutors()
+    if (token) loadTutors()
   }, [token])
 
-  if (loading) return <Loader />
+  if (loading || authLoading) return <Loader />
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <h2 className="text-xl font-bold mb-4">All Tutors</h2>
-      {tutors.length === 0 ? (
-        <p>No tutors found.</p>
-      ) : (
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className={thStyle}>Name</th>
-              <th className={thStyle}>Email</th>
-              <th className={thStyle}>Subjects</th>
-              <th className={thStyle}>Verified</th>
-              <th className={thStyle}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tutors.map(tutor => (
-              <tr key={tutor.user.id} style={trStyle}>
-                <td className={tdStyle}>{tutor.user.full_name}</td>
-                <td className={tdStyle}>{tutor.user.email}</td>
-                <td className={tdStyle}>{(tutor.subjects || []).join(', ')}</td>
-                <td className={tdStyle}>{tutor.is_verified ? 'Yes' : 'No'}</td>
-                <td className={`${tdStyle} space-x-2`}>
-                  {!tutor.is_verified && (
-                    <>
-                      <Button
-                        disabled={actionLoading[tutor.user.id]}
-                        onClick={() => handleToggleVerify(tutor.user.id, true)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        disabled={actionLoading[tutor.user.id]}
-                        onClick={() => handleToggleVerify(tutor.user.id, false)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                      >
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Users className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">All Tutors</h1>
+          <p className="text-muted-foreground">Manage and verify tutors in the system</p>
+        </div>
+      </div>
+
+      <Card className="border border-border">
+        <CardHeader>
+          <CardTitle>Tutors ({tutors.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {tutors.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No tutors found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Name</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Email</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Subjects</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {tutors.map(tutor => (
+                    <tr key={tutor.user.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 text-sm font-medium">{tutor.user.full_name}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{tutor.user.email}</td>
+                      <td className="px-4 py-3 text-sm">{(tutor.subjects || []).join(', ')}</td>
+                      <td className="px-4 py-3 text-sm">
+                        {tutor.is_verified ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            <CheckCircle className="w-3 h-3" /> Verified
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
+                            <XCircle className="w-3 h-3" /> Pending
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm space-x-2">
+                        {!tutor.is_verified && (
+                          <>
+                            <Button
+                              disabled={actionLoading[tutor.user.id]}
+                              onClick={() => handleToggleVerify(tutor.user.id, true)}
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              disabled={actionLoading[tutor.user.id]}
+                              onClick={() => handleToggleVerify(tutor.user.id, false)}
+                              size="sm"
+                              variant="destructive"
+                            >
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
-
-const thStyle = 'border-b border-gray-300 p-3 text-left'
-const tdStyle = 'border-b border-gray-200 p-3'
-const trStyle = { background: '#fafafa' }
 
 export default AllTutors

@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Loader from './Loader'
 import { useAuth } from '@/lib/auth-context'
+import { CheckCircle, XCircle } from 'lucide-react'
 
 interface User {
   id: number
@@ -23,7 +25,6 @@ const PendingTutors: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<{ [key: number]: boolean }>({})
 
-  // ✅ Use token from auth-context
   const { token, isLoading: authLoading } = useAuth()
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
@@ -32,11 +33,10 @@ const PendingTutors: React.FC = () => {
     setLoading(true)
     try {
       const res = await axios.get(`${API_URL}/api/admin/pending-tutors`, {
-        headers: { Authorization: `Bearer ${token}` }, // ✅ use context token
+        headers: { Authorization: `Bearer ${token}` },
       })
-      const data = res.data.tutors as Tutor[]
-      setTutors(data || [])
-    } catch (err) {
+      setTutors(res.data.tutors || [])
+    } catch (err: any) {
       console.error('Failed to fetch tutors:', err)
       alert(err.response?.status === 401 ? 'Unauthorized. Please login again.' : 'Failed to fetch pending tutors')
     } finally {
@@ -78,7 +78,6 @@ const PendingTutors: React.FC = () => {
     }
   }
 
-  // ✅ Wait for token from auth context before fetching
   useEffect(() => {
     if (token) loadTutors()
   }, [token])
@@ -86,54 +85,61 @@ const PendingTutors: React.FC = () => {
   if (loading || authLoading) return <Loader />
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted p-6">
-      <h1 className="text-2xl font-bold mb-4">Pending Tutors</h1>
-
-      {tutors.length === 0 ? (
-        <p>No pending tutors.</p>
-      ) : (
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className={thStyle}>Name</th>
-              <th className={thStyle}>Email</th>
-              <th className={thStyle}>Subjects</th>
-              <th className={thStyle}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tutors.map(tutor => (
-              <tr key={tutor.user.id} style={trStyle}>
-                <td className={tdStyle}>{tutor.user.full_name}</td>
-                <td className={tdStyle}>{tutor.user.email}</td>
-                <td className={tdStyle}>{(tutor.subjects || []).join(', ')}</td>
-                <td className={`${tdStyle} space-x-2`}>
-                  <Button
-                    disabled={actionLoading[tutor.user.id]}
-                    onClick={() => handleApprove(tutor.user.id)}
-                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    disabled={actionLoading[tutor.user.id]}
-                    onClick={() => handleReject(tutor.user.id)}
-                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                  >
-                    Reject
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+    <Card className="border border-border">
+      <CardHeader>
+        <CardTitle>Pending Tutor Applications ({tutors.length})</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {tutors.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">
+            No pending tutor applications.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Name</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Email</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Subjects</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {tutors.map(tutor => (
+                  <tr key={tutor.user.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3 text-sm font-medium">{tutor.user.full_name}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{tutor.user.email}</td>
+                    <td className="px-4 py-3 text-sm">{(tutor.subjects || []).join(', ')}</td>
+                    <td className="px-4 py-3 text-sm space-x-2">
+                      <Button
+                        disabled={actionLoading[tutor.user.id]}
+                        onClick={() => handleApprove(tutor.user.id)}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Approve
+                      </Button>
+                      <Button
+                        disabled={actionLoading[tutor.user.id]}
+                        onClick={() => handleReject(tutor.user.id)}
+                        size="sm"
+                        variant="destructive"
+                      >
+                        <XCircle className="w-3 h-3 mr-1" />
+                        Reject
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
-
-const thStyle = 'border-b border-gray-300 p-3 text-left'
-const tdStyle = 'border-b border-gray-200 p-3'
-const trStyle = { background: '#fafafa' }
 
 export default PendingTutors

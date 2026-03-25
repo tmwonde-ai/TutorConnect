@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { ProtectedRoute } from '@/components/protected-route'
-import { DrawingBoard } from '@/components/drawing-board'
+import { ExcaliburnDrawingBoard } from '@/components/excalibur-drawing-board'
 import { SessionChat } from '@/components/session-chat'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -109,38 +109,6 @@ export default function SessionPage() {
     return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`
   }
 
-  // ================= SEND TUTOR SNAPSHOT =================
-  const sendSnapshot = async (base64: string) => {
-    if (!sessionData) return
-    try {
-      const res = await fetch(`${API_BASE}/sessions/${sessionData.id}/snapshot`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify({ snapshot: base64 })
-      })
-      if (!res.ok) throw new Error('Failed to send snapshot')
-      alert('Snapshot sent!')
-    } catch (err: any) {
-      alert(err.message)
-    }
-  }
-
-  // ================= SEND STUDENT SNAPSHOT =================
-  const sendStudentSnapshot = async (base64: string) => {
-    if (!sessionData || !user) return
-    try {
-      const res = await fetch(`${API_BASE}/sessions/${sessionData.id}/student_snapshot`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify({ snapshot: base64, user_id: user.id })
-      })
-      if (!res.ok) throw new Error('Failed to send annotated snapshot')
-      alert('Your annotation was sent!')
-    } catch (err: any) {
-      alert(err.message)
-    }
-  }
-
   // ================= START SESSION =================
   const handleStartSession = async () => {
     if (!sessionData) return
@@ -193,14 +161,12 @@ export default function SessionPage() {
               <p className="text-foreground/60 mt-1">Session ID: {sessionData.id}</p>
             </div>
             <div className="flex gap-6 items-center">
-              {/* Timer */}
               {sessionData.status === 'ongoing' && (
                 <div className="text-lg font-mono font-semibold text-green-500">
                   {formatTime(elapsedSeconds)}
                 </div>
               )}
 
-              {/* Start / End Buttons */}
               {isTutor && sessionData.status === 'scheduled' && (
                 <Button onClick={handleStartSession}>Start Session</Button>
               )}
@@ -220,15 +186,15 @@ export default function SessionPage() {
               <CardHeader>
                 <CardTitle className="text-primary">Interactive Board</CardTitle>
               </CardHeader>
-              <CardContent className="h-[500px]">
-                <DrawingBoard
+              <CardContent className="h-[600px] p-0">
+                
+                {/* ✅ FIX APPLIED HERE */}
+                <ExcaliburnDrawingBoard
+                  sessionId={sessionData.id}
+                  userId={user?.id || 0}
                   isTutor={isTutor}
-                  snapshot={snapshot || undefined}
-                  onSendSnapshot={sendSnapshot}
-                  onSendStudentSnapshot={!isTutor ? sendStudentSnapshot : undefined}
-                  sessionId={sessionData.id.toString()}
-                  getAuthHeaders={getAuthHeaders}
                 />
+
               </CardContent>
             </Card>
           </div>
@@ -243,7 +209,6 @@ export default function SessionPage() {
               />
             </div>
 
-            {/* SESSION INFO */}
             <Card className="border-border">
               <CardHeader>
                 <CardTitle className="text-primary">Session Info</CardTitle>
@@ -262,7 +227,6 @@ export default function SessionPage() {
               </CardContent>
             </Card>
 
-            {/* PARTICIPANTS */}
             <Card className="border-border">
               <CardHeader>
                 <CardTitle className="text-primary">Participants</CardTitle>

@@ -32,10 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
-  // ✅ Initialize token safely on client only
+  // Initialize from localStorage
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
     const storedToken = localStorage.getItem('auth_token')
     const storedUser = localStorage.getItem('auth_user')
 
@@ -43,10 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(storedToken)
       setUser(JSON.parse(storedUser))
     }
-
     setIsLoading(false)
   }, [])
 
+  // ⭐ Login function works for regular and admin users
   const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
@@ -55,22 +53,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
-      if (!response.ok) throw new Error('Login failed')
+
+      if (!response.ok) {
+        throw new Error('Login failed')
+      }
 
       const data = await response.json()
       setToken(data.token)
       setUser(data.user)
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('auth_token', data.token)
-        localStorage.setItem('auth_user', JSON.stringify(data.user))
-      }
+      localStorage.setItem('auth_token', data.token)
+      localStorage.setItem('auth_user', JSON.stringify(data.user))
+    } catch (error) {
+      console.error('Login error:', error)
+      throw error
     } finally {
       setIsLoading(false)
     }
   }
 
-  const register = async (email: string, password: string, fullName: string, role: 'tutor' | 'student') => {
+  const register = async (
+    email: string,
+    password: string,
+    fullName: string,
+    role: 'tutor' | 'student'
+  ) => {
     setIsLoading(true)
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
@@ -78,16 +84,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, full_name: fullName, role }),
       })
-      if (!response.ok) throw new Error('Registration failed')
+
+      if (!response.ok) {
+        throw new Error('Registration failed')
+      }
 
       const data = await response.json()
       setToken(data.token)
       setUser(data.user)
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('auth_token', data.token)
-        localStorage.setItem('auth_user', JSON.stringify(data.user))
-      }
+      localStorage.setItem('auth_token', data.token)
+      localStorage.setItem('auth_user', JSON.stringify(data.user))
+    } catch (error) {
+      console.error('Register error:', error)
+      throw error
     } finally {
       setIsLoading(false)
     }
@@ -96,16 +105,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null)
     setToken(null)
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('auth_user')
-    }
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
   }
 
-  // ✅ SSR-safe: only access token from state
+  // Helper to add auth headers in Axios requests
+  // Helper to add auth headers dynamically from localStorage
   const getAuthHeaders = () => {
-    return token ? { Authorization: `Bearer ${token}` } : {}
-  }
+  const storedToken = localStorage.getItem('auth_token')
+  return storedToken ? { Authorization: `Bearer ${storedToken}` } : {}
+}
 
   return (
     <AuthContext.Provider
@@ -125,8 +134,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// Hook to access auth context
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth must be used within AuthProvider')
+  if (context === undefined) {
+    throw new Error('useAuth must be used within AuthProvider')
+  }
   return context
 }

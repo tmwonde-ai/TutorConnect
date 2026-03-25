@@ -29,10 +29,12 @@ app.config['JWT_ALGORITHM'] = 'HS256'
 db.init_app(app)
 
 # ==================== CORS FIX ====================
+
 CORS(
     app,
-    resources={r"/*": {"origins": "http://localhost:3000"}},  # apply to all routes
-    supports_credentials=True
+    resources={r"/*": {"origins": "http://localhost:3000"}},
+    supports_credentials=True,
+    methods=["GET", "POST", "OPTIONS"]
 )
 
 # SocketIO with CORS allowed
@@ -1289,109 +1291,139 @@ def get_reports(current_user):
     ])
 
 
-# ==================== WEBSOCKET EVENTS ====================
-
-# New API endpoint to upload snapshot
-
-@app.route('/api/sessions/<int:session_id>/snapshot', methods=['POST'])
+# ==================== SNAPSHOT API ====================
+@app.route('/api/sessions/<int:session_id>/snapshot', methods=['POST', 'OPTIONS'])
 def save_snapshot(session_id):
-    data = request.get_json()
+    # ✅ Handle preflight OPTIONS request
+    if request.method == "OPTIONS":
+        return '', 200
 
-    if not data or 'snapshot' not in data:
-        return jsonify({"error": "No snapshot provided"}), 400
+    data = request.get_json()
+    if not data or 'snapshot' not in data or 'user_id' not in data:
+        return jsonify({"error": "Missing snapshot or user_id"}), 400
 
     snapshot = data['snapshot']
+    user_id = data['user_id']
 
     session = Session.query.get(session_id)
     if not session:
         return jsonify({"error": "Session not found"}), 404
 
-    # ✅ SAVE IT
+    # ✅ Save snapshot
     session.latest_snapshot = snapshot
     db.session.commit()
 
-    # ✅ BROADCAST
+    print(f"📸 Snapshot saved for session {session_id} by user {user_id}")
+
+    # ✅ Broadcast snapshot to everyone in the session room
     socketio.emit(
         "new_snapshot",
-        {"snapshot": snapshot},
+        {
+            "snapshot": snapshot,
+            "user_id": user_id
+        },
         room=f"session_{session_id}"
     )
 
     return jsonify({"success": True}), 200
 
+# ==================== WEBSOCKET EVENTS ====================
 
-# Student sending back annotated snapshot
-@app.route('/api/sessions/<int:session_id>/student_snapshot', methods=['POST'])
-def upload_student_snapshot(session_id):
-    data = request.json
-    snapshot = data.get('snapshot')
-    user_id = data.get('user_id')
+@socketio.on("connect")
+def handle_connect():
+    print("🔥 Client connected")
 
-    if not snapshot or not user_id:
-        return jsonify({'error': 'Missing data'}), 400
 
-    session = Session.query.get(session_id)
-    if not session:
-        return jsonify({'error': 'Session not found'}), 404
+@socketio.on("disconnect")
+def handle_disconnect():
+    print("❌ Client disconnected")
 
-    # Save student snapshot (optional)
-    session.student_snapshot = snapshot
-    db.session.commit()
-
-    # Notify tutor using socketio.emit instead of emit
-    socketio.emit(
-        'student_snapshot',
-        {'snapshot': snapshot, 'user_id': user_id},
-        room=f'session_{session_id}'
-    )
-
-    return jsonify({'status': 'ok'})
 
 @socketio.on("join_session")
 def handle_join_session(data):
     session_id = data.get("session_id")
     user_id = data.get("user_id")
+
     if not session_id or not user_id:
+        print("❌ Invalid join_session data:", data)
         return
+
     room = f"session_{session_id}"
     join_room(room)
-    print(f"User {user_id} joined session {session_id}")
+
+    print(f"✅ User {user_id} joined session {session_id}")
+
 
 @socketio.on("leave_session")
 def handle_leave_session(data):
     session_id = data.get("session_id")
     user_id = data.get("user_id")
+
+    if not session_id or not user_id:
+        print("❌ Invalid leave_session data:", data)
+        return
+
     room = f"session_{session_id}"
     leave_room(room)
-    print(f"User {user_id} left session {session_id}")
 
-@socketio.on("draw")
-def handle_draw(data):
-    session_id = data.get("session_id")
-    if not session_id:
-        return
-    room = f"session_{session_id}"
-    # Broadcast to everyone in the session except sender
-    emit("draw_update", data, room=room, include_self=False)
+    print(f"👋 User {user_id} left session {session_id}")
 
 
 @socketio.on("request_snapshot")
 def handle_request_snapshot(data):
-
     session_id = data.get("session_id")
+    user_id = data.get("user_id")  # optional: could log who requested
+
+    if not session_id:
+        print("❌ request_snapshot missing session_id")
+        return
 
     session = Session.query.get(session_id)
 
     if session and session.latest_snapshot:
+        print(f"📤 Sending snapshot to requester for session {session_id}")
 
+        # ✅ Send snapshot directly to requester
         emit(
             "new_snapshot",
-            {"snapshot": session.latest_snapshot},
-            room=f"session_{session_id}"
+            {
+                "snapshot": session.latest_snapshot,
+                "user_id": None  # sender unknown; frontend will apply
+            }
         )
-        
+    else:
+        print(f"⚠️ No snapshot found for session {session_id}")
 
 
+@socketio.on("send_message")
+def handle_send_message(data):
+    session_id = data.get("session_id")
+    content = data.get("content")
+    sender = data.get("sender")
+    sender_role = data.get("sender_role")
+    msg_type = data.get("type", "text")
+
+    if not session_id or not content or not sender:
+        print("❌ send_message missing required fields:", data)
+        return
+
+    room = f"session_{session_id}"
+
+    print(f"💬 Broadcasting message in session {session_id} from {sender}")
+
+    emit(
+        "message_received",
+        {
+            "id": str(int(datetime.utcnow().timestamp() * 1000)),  # temp ID
+            "sender_name": sender,
+            "sender_role": sender_role,
+            "content": content,
+            "type": msg_type,
+            "timestamp": datetime.utcnow().isoformat(),
+        },
+        room=room,
+        include_self=False  # sender already sees it via temp message
+    )
 
 #====================== BOARD TO BROAD
 
