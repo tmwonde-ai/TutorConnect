@@ -39,7 +39,7 @@ db.init_app(app)
 
 CORS(
     app,
-    resources={r"/*": {"origins": "http://localhost:3000"}},
+    resources={r"/*": {"origins": ["http://localhost:3000", "https://my-frontend.vercel.app"]}},
     supports_credentials=True,
     methods=["GET", "POST", "OPTIONS"]
 )
