@@ -19,6 +19,13 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# Fix Railway DATABASE_URL
+database_url = os.getenv('DATABASE_URL', 'sqlite:///tutoring.db')
+
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+
 # App configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///tutoring.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
