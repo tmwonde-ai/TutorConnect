@@ -1569,8 +1569,11 @@ def get_student_profile(user_id):
 
 
 
+# 🔥 ALWAYS runs (even on Railway)
+with app.app_context():
+    db.create_all()
+    print("✅ Tables created")
 
+# Only for local dev
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
