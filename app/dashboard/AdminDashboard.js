@@ -14,7 +14,7 @@ const AdminDashboard = () => {
   const fetchPendingTutors = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("/api/admin/pending-tutors", {
+      const res = await axios.get("/admin/pending-tutors", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

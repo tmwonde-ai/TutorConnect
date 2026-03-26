@@ -43,8 +43,8 @@ const AllTutors: React.FC = () => {
     setActionLoading(prev => ({ ...prev, [userId]: true }))
     try {
       const endpoint = verify
-        ? `${API_URL}/api/admin/verify-tutor/${userId}`
-        : `${API_URL}/api/admin/reject-tutor/${userId}`
+        ? `${API_URL}/admin/verify-tutor/${userId}`
+        : `${API_URL}/admin/reject-tutor/${userId}`
 
       await axios.post(endpoint, {}, {
         headers: { Authorization: `Bearer ${token}` },

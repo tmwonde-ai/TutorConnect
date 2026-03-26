@@ -54,7 +54,7 @@ export function SessionChat({
   // ---- URL helper ----
   const getMessageUrl = (content: string) => {
     if (content.startsWith('http')) return content
-    if (content.startsWith('/')) return `${API_BASE.replace('/api', '')}${content}`
+    if (content.startsWith('/')) return `${API_BASE.replace('', '')}${content}`
     return content
   }
 

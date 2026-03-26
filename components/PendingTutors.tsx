@@ -48,7 +48,7 @@ const PendingTutors: React.FC = () => {
     if (!token) return
     setActionLoading(prev => ({ ...prev, [userId]: true }))
     try {
-      await axios.post(`${API_URL}/api/admin/verify-tutor/${userId}`, {}, {
+      await axios.post(`${API_URL}/admin/verify-tutor/${userId}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setTutors(prev => prev.filter(t => t.user.id !== userId))
@@ -65,7 +65,7 @@ const PendingTutors: React.FC = () => {
     if (!token) return
     setActionLoading(prev => ({ ...prev, [userId]: true }))
     try {
-      await axios.post(`${API_URL}/api/admin/reject-tutor/${userId}`, {}, {
+      await axios.post(`${API_URL}/admin/reject-tutor/${userId}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setTutors(prev => prev.filter(t => t.user.id !== userId))
