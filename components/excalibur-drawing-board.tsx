@@ -109,7 +109,7 @@ export function ExcaliburnDrawingBoard({ sessionId, userId, isTutor = false }: P
       const snapshot = await captureSnapshot()
       if (!snapshot) return
 
-      await fetch(`http://localhost:5000/api/sessions/${sessionId}/snapshot`, {
+      await fetch(`http://localhost:5000/sessions/${sessionId}/snapshot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ snapshot, user_id: userId })

@@ -32,7 +32,7 @@ const PendingTutors: React.FC = () => {
     if (!token) return
     setLoading(true)
     try {
-      const res = await axios.get(`${API_URL}/api/admin/pending-tutors`, {
+      const res = await axios.get(`${API_URL}/admin/pending-tutors`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setTutors(res.data.tutors || [])
