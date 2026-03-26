@@ -28,7 +28,7 @@ export default function StudentProfileView() {
         const token = localStorage.getItem('auth_token')
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/students/${studentId}`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/students/${studentId}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }

@@ -42,7 +42,7 @@ function StudentProfileContent() {
 
         // Load student profile
         const resProfile = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/students/${user.id}`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/students/${user.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
         if (resProfile.ok) {
@@ -65,7 +65,7 @@ function StudentProfileContent() {
 
         // Load sessions for learning progress
         const resSessions = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/sessions`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/sessions`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
         if (resSessions.ok) {
@@ -102,7 +102,7 @@ function StudentProfileContent() {
       }
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/students/${user.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/students/${user.id}`,
         {
           method: 'PUT',
           headers: {

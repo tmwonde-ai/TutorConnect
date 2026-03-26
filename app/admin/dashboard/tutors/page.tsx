@@ -23,7 +23,7 @@ const AllTutors: React.FC = () => {
     if (!token) return alert('No token found. Please login again.')
     setLoading(true)
     try {
-      const res = await axios.get(`${API_URL}/api/admin/all-tutors`, {
+      const res = await axios.get(`${API_URL}/admin/all-tutors`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setTutors(res.data.tutors || [])

@@ -74,7 +74,7 @@ function StudentSessionsContent() {
     try {
       const token = localStorage.getItem('auth_token')
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/sessions`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/sessions`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         }
@@ -105,7 +105,7 @@ function StudentSessionsContent() {
     try {
       const token = localStorage.getItem('auth_token')
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/sessions/${sessionId}/cancel`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/sessions/${sessionId}/cancel`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
@@ -134,7 +134,7 @@ function StudentSessionsContent() {
     try {
       const token = localStorage.getItem("auth_token")
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/sessions/${deleteSessionId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/sessions/${deleteSessionId}`,
         { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
       )
       if (res.ok) setSessions(prev => prev.filter(s => s.id !== deleteSessionId))
@@ -160,7 +160,7 @@ function StudentSessionsContent() {
     try {
       const token = localStorage.getItem('auth_token')
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/payments`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/payments`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -189,7 +189,7 @@ function StudentSessionsContent() {
     try {
       const token = localStorage.getItem('auth_token')
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/ratings`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/ratings`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
