@@ -47,7 +47,7 @@ function TutorProfileContent() {
         if (!token) return
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/tutors/${user.id}`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/tutors/${user.id}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -85,7 +85,7 @@ function TutorProfileContent() {
         if (!token) return
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/tutors/${user.id}/stats`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/tutors/${user.id}/stats`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -131,7 +131,7 @@ function TutorProfileContent() {
       }
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/tutors/${user.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/tutors/${user.id}`,
         {
           method: 'PUT',
           headers: {

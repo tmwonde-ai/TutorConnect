@@ -39,7 +39,7 @@ function TutorSessionsContent() {
     try {
       const token = localStorage.getItem('auth_token')
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/sessions`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/sessions`,
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       )
 
@@ -59,7 +59,7 @@ function TutorSessionsContent() {
     try {
       const token = localStorage.getItem('auth_token')
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/sessions/${sessionId}/accept`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/sessions/${sessionId}/accept`,
         {
           method: 'POST',
           headers: {
@@ -87,7 +87,7 @@ function TutorSessionsContent() {
     try {
       const token = localStorage.getItem('auth_token')
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/sessions/${rejectingSession}/reject`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/sessions/${rejectingSession}/reject`,
         {
           method: 'POST',
           headers: {

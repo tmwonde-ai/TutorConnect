@@ -30,7 +30,7 @@ function TutorEarningsContent() {
     try {
       const token = localStorage.getItem('auth_token')
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/tutors/earnings`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/tutors/earnings`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         }
