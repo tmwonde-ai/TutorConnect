@@ -39,16 +39,12 @@ db.init_app(app)
 
 CORS(
     app,
-    resources={
-        r"/*": {
-            "origins": [
-                "http://localhost:3000",
-                "https://tutor-connect-five.vercel.app"
-            ]
-        }
-    },
+    resources={r"/*": {"origins": [
+        "http://localhost:3000",
+        "https://tutor-connect-five.vercel.app"
+    ]}},
     supports_credentials=True,
-    methods=["GET", "POST", "OPTIONS"]
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]  # 👈 ADD THIS
 )
 
 # SocketIO with CORS allowed
