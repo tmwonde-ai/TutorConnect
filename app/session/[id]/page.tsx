@@ -29,7 +29,11 @@ export default function SessionPage() {
   const sessionId = params.id as string
   const isTutor = user?.role === 'tutor'
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  throw new Error("API URL not configured")
+}
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
 
   const [sessionData, setSessionData] = useState<SessionData | null>(null)
   const [loading, setLoading] = useState(true)
