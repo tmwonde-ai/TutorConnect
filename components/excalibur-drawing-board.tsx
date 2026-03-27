@@ -17,7 +17,7 @@ const Excalidraw = dynamic(
 // ✅ Singleton socket instance
 let socket: any
 if (typeof window !== 'undefined' && !socket) {
-  socket = io('http://localhost:5000', { transports: ['websocket', 'polling'] })
+  socket = io('tutorconnect-production-1d62.up.railway.app', { transports: ['websocket', 'polling'] })
 }
 
 interface Props {
