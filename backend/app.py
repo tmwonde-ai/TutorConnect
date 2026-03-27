@@ -13,6 +13,7 @@ from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 from flask import send_from_directory
 import base64
+import eventlet
 
 
 load_dotenv()
@@ -52,7 +53,17 @@ CORS(
 )
 
 # SocketIO with CORS allowed
-socketio = SocketIO(app, cors_allowed_origins="http://localhost:3000")
+
+eventlet.monkey_patch()
+
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=[
+        "http://localhost:3000",
+        "https://tutor-connect-five.vercel.app"
+    ]
+)
+
 
 # ==================== UPLOAD CONFIG ====================
 UPLOAD_FOLDER = 'uploads'

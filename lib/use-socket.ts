@@ -15,9 +15,9 @@ export function useSocket(options: UseSocketOptions = {}) {
     if (disabled) return
 
     const socket = io(url, {
-      transports: ['websocket'],
-      reconnection: true
-    })
+  transports: ['websocket', 'polling'], // 👈 allow fallback
+  reconnection: true
+})
 
     socketRef.current = socket
 
