@@ -60,7 +60,7 @@ socketio = SocketIO(
         "http://localhost:3000",
         "https://tutor-connect-five.vercel.app"
     ],
-    async_mode="threading"
+    async_mode="eventlet"
 )
 
 
