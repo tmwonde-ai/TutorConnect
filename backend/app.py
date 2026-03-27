@@ -1368,20 +1368,6 @@ def handle_disconnect():
     print("❌ Client disconnected")
 
 
-@socketio.on("join_session")
-def handle_join_session(data):
-    session_id = data.get("session_id")
-    user_id = data.get("user_id")
-
-    if not session_id or not user_id:
-        print("❌ Invalid join_session data:", data)
-        return
-
-    room = f"session_{session_id}"
-    join_room(room)
-
-    print(f"✅ User {user_id} joined session {session_id}")
-
 
 @socketio.on("leave_session")
 def handle_leave_session(data):
@@ -1496,8 +1482,15 @@ def handle_join_session(data):
     room = f"session_{session_id}"
     join_room(room)
 
-    print(f"User {user_id} joined {room}")
-
+    session = Session.query.get(session_id)
+    if session and session.latest_snapshot:
+        emit(
+            "new_snapshot",
+            {
+                "snapshot": session.latest_snapshot,
+                "user_id": None
+            }
+        )
 # ==================== HEALTH CHECK ====================
 
 @app.route('/api/health', methods=['GET'])

@@ -79,7 +79,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL
     on("student_snapshot", handleNewSnapshot)
 
     return () => {
-      emit("leave_session", { session_id: sessionId })
       off("new_snapshot", handleNewSnapshot)
       off("student_snapshot", handleNewSnapshot)
     }

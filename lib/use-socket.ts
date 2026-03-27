@@ -8,17 +8,25 @@ interface UseSocketOptions {
 
 export function useSocket(options: UseSocketOptions = {}) {
   // Dynamically set the URL based on environment
-const defaultUrl =
-  process.env.NODE_ENV === 'development'
-    ? 'http://localhost:5000' // local dev
-    : process.env.NEXT_PUBLIC_SOCKET_URL // production // production: same host
+  const defaultUrl =
+    process.env.NODE_ENV === 'development'
+      ? 'http://localhost:5000'
+      : process.env.NEXT_PUBLIC_SOCKET_URL
 
   const { url = defaultUrl, disabled = false } = options
+
   const socketRef = useRef<Socket | null>(null)
   const [connected, setConnected] = useState(false)
 
   useEffect(() => {
     if (disabled) return
+    if (!url) {
+      console.error('[Socket] No URL provided')
+      return
+    }
+
+    // ✅ Prevent multiple connections
+    if (socketRef.current) return
 
     const socket = io(url, {
       transports: ['websocket', 'polling'],
@@ -37,8 +45,9 @@ const defaultUrl =
       setConnected(false)
     })
 
+    // ❌ DO NOT disconnect on unmount
     return () => {
-      socket.disconnect()
+      // socket.disconnect() ❌ removed
     }
   }, [url, disabled])
 
