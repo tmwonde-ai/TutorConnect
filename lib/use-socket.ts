@@ -7,7 +7,13 @@ interface UseSocketOptions {
 }
 
 export function useSocket(options: UseSocketOptions = {}) {
-  const { url = 'http://localhost:5000', disabled = false } = options
+  // Dynamically set the URL based on environment
+const defaultUrl =
+  process.env.NODE_ENV === 'development'
+    ? 'http://localhost:5000' // local dev
+    : process.env.NEXT_PUBLIC_SOCKET_URL // production // production: same host
+
+  const { url = defaultUrl, disabled = false } = options
   const socketRef = useRef<Socket | null>(null)
   const [connected, setConnected] = useState(false)
 
@@ -15,9 +21,9 @@ export function useSocket(options: UseSocketOptions = {}) {
     if (disabled) return
 
     const socket = io(url, {
-  transports: ['websocket', 'polling'], // 👈 allow fallback
-  reconnection: true
-})
+      transports: ['websocket', 'polling'],
+      reconnection: true
+    })
 
     socketRef.current = socket
 
