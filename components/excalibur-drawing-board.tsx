@@ -8,6 +8,9 @@ import { Send } from 'lucide-react'
 import io from 'socket.io-client'
 import '@excalidraw/excalidraw/index.css'
 
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+
 // ✅ Dynamically import Excalidraw (NO SSR)
 const Excalidraw = dynamic(
   async () => (await import('@excalidraw/excalidraw')).Excalidraw,
@@ -17,7 +20,9 @@ const Excalidraw = dynamic(
 // ✅ Singleton socket instance
 let socket: any
 if (typeof window !== 'undefined' && !socket) {
-  socket = io('tutorconnect-production-1d62.up.railway.app', { transports: ['websocket', 'polling'] })
+  socket = io('https://tutorconnect-production-1d62.up.railway.app', {
+  transports: ['websocket', 'polling']
+})
 }
 
 interface Props {
@@ -109,7 +114,7 @@ export function ExcaliburnDrawingBoard({ sessionId, userId, isTutor = false }: P
       const snapshot = await captureSnapshot()
       if (!snapshot) return
 
-      await fetch(`http://localhost:5000/sessions/${sessionId}/snapshot`, {
+      await fetch(`${API_BASE}/sessions/${sessionId}/snapshot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ snapshot, user_id: userId })
