@@ -5,122 +5,77 @@ import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Send } from 'lucide-react'
-import io from 'socket.io-client'
 import '@excalidraw/excalidraw/index.css'
-
+import { useAuth } from '@/lib/auth-context'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL
 
-// ✅ Dynamically import Excalidraw (NO SSR)
+// Dynamically import Excalidraw (no SSR)
 const Excalidraw = dynamic(
   async () => (await import('@excalidraw/excalidraw')).Excalidraw,
   { ssr: false }
 )
 
-// ✅ Singleton socket instance
-let socket: any
-if (typeof window !== 'undefined' && !socket) {
-  socket = io('https://tutorconnect-production-1d62.up.railway.app', {
-  transports: ['websocket', 'polling']
-})
-}
-
 interface Props {
-  sessionId: number
-  userId: number
   isTutor?: boolean
+  onSendSnapshot: (snapshot: string) => void
+  snapshot?: string
 }
 
-export function ExcaliburnDrawingBoard({ sessionId, userId, isTutor = false }: Props) {
+export function ExcaliburnDrawingBoard({ isTutor = false, onSendSnapshot, snapshot }: Props) {
+  const { getAuthHeaders } = useAuth()
   const excalidrawRef = useRef<any>(null)
   const [isSendingSnapshot, setIsSendingSnapshot] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
+  useEffect(() => setIsMounted(true), [])
+
+  // =================== LOAD SNAPSHOT ===================
   useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  // ✅ Join session
-  useEffect(() => {
-    if (!sessionId || !userId) return
-
-    socket.emit('join_session', {
-      session_id: sessionId,
-      user_id: userId
-    })
-
-    return () => {
-      socket.emit('leave_session', {
-        session_id: sessionId,
-        user_id: userId
+    if (!snapshot || !excalidrawRef.current) return
+    try {
+      const parsed = JSON.parse(snapshot)
+      const { elements, appState, files } = parsed
+      const safeAppState = { ...(appState || {}), collaborators: new Map() }
+      excalidrawRef.current.updateScene({
+        elements: elements || [],
+        appState: safeAppState,
+        files: files || {}
       })
+    } catch (e) {
+      console.error('Failed to load snapshot:', e)
     }
-  }, [sessionId, userId])
+  }, [snapshot])
 
-  // ✅ Listen for snapshots (FIX HERE)
-  useEffect(() => {
-    const handler = (data: { snapshot: string; user_id: number }) => {
-      if (!data?.snapshot || !excalidrawRef.current) return
-      if (data.user_id === userId) return
-
-      try {
-        const parsed = JSON.parse(data.snapshot)
-        const { elements, appState } = parsed
-
-        // ✅ FIX: sanitize appState
-        const safeAppState = {
-          ...(appState || {}),
-          collaborators: new Map() // 🔥 CRITICAL FIX
-        }
-
-        excalidrawRef.current.updateScene({
-          elements: elements || [],
-          appState: safeAppState
-        })
-      } catch (e) {
-        console.error('Failed to apply snapshot:', e)
-      }
-    }
-
-    socket.on('new_snapshot', handler)
-    return () => socket.off('new_snapshot', handler)
-  }, [userId])
-
-  // ✅ Capture scene (also fix here)
+  // =================== CAPTURE SNAPSHOT ===================
   const captureSnapshot = async () => {
     if (!excalidrawRef.current) return null
-
     try {
       const elements = excalidrawRef.current.getSceneElements()
       const appState = excalidrawRef.current.getAppState()
-
-      // ❌ REMOVE collaborators before sending
+      const files = excalidrawRef.current.getFiles()
       const { collaborators, ...safeAppState } = appState
 
-      return JSON.stringify({ elements, appState: safeAppState })
+      return JSON.stringify({
+        elements,
+        appState: safeAppState,
+        files
+      })
     } catch (e) {
-      console.error('Snapshot error:', e)
+      console.error('Snapshot capture error:', e)
       return null
     }
   }
 
-  // ✅ Send snapshot
+  // =================== SEND SNAPSHOT ===================
   const handleSendSnapshot = async () => {
-    if (!sessionId || !userId) return
-
     setIsSendingSnapshot(true)
-
     try {
-      const snapshot = await captureSnapshot()
-      if (!snapshot) return
-
-      await fetch(`${API_BASE}/sessions/${sessionId}/snapshot`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ snapshot, user_id: userId })
-      })
-    } catch (e) {
-      console.error('Send failed:', e)
+      const snapshotStr = await captureSnapshot()
+      if (!snapshotStr) return
+      onSendSnapshot(snapshotStr)
+    } catch (e: any) {
+      console.error('Send snapshot failed:', e.message)
     } finally {
       setIsSendingSnapshot(false)
     }
@@ -137,7 +92,7 @@ export function ExcaliburnDrawingBoard({ sessionId, userId, isTutor = false }: P
 
         <Button
           onClick={handleSendSnapshot}
-          disabled={isSendingSnapshot || !sessionId || !userId}
+          disabled={isSendingSnapshot}
           size="sm"
           className="gap-2 bg-primary hover:bg-primary/90"
         >

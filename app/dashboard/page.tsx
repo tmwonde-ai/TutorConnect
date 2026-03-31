@@ -10,6 +10,8 @@ import { ThemeToggle } from "@/components/theme-toggle"
 function DashboardContent() {
   const { user, logout } = useAuth()
 
+  const supportEmail = `mailto:timothyjonda@gmail.com?subject=TutorConnect%20Support&body=Hi%20Timothy,%0A%0AMy%20name%20is%20${encodeURIComponent(user?.full_name || '')}.%20I%20need%20help%20with...%0A%0AThanks.`
+
   return (
     <div className='min-h-screen '>
       {/* Header */}
@@ -25,7 +27,6 @@ function DashboardContent() {
               onClick={logout}
               variant='outline'
               className='border-primary text-primary hover:bg-primary/10'>
-
               Sign Out
             </Button>
           </div>
@@ -38,10 +39,11 @@ function DashboardContent() {
           <div className='space-y-8'>
             {/* Student Dashboard */}
             <div>
-              <h2 className="text-2xl font-bold text-white !text-white mb-6 relative z-10">
+              <h2 className="text-2xl font-bold text-white mb-6">
                 Welcome, {user?.full_name}!
               </h2>
-              <div className='grid md:grid-cols-3 gap-6'>
+
+              <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-6'>
                 <Card className='border-border hover:shadow-lg transition-shadow'>
                   <CardHeader>
                     <CardTitle className='text-primary'>Find a Tutor</CardTitle>
@@ -83,6 +85,24 @@ function DashboardContent() {
                     </Link>
                   </CardContent>
                 </Card>
+
+                {/* Support Card */}
+                <Card className='border-border hover:shadow-lg transition-shadow'>
+                  <CardHeader>
+                    <CardTitle className='text-primary'>Help & Support</CardTitle>
+                  </CardHeader>
+                  <CardContent className='space-y-4'>
+                    <p className='text-foreground/70'>
+                      For any queries or complaints, feel free to reach out to us.
+                    </p>
+
+                    <a href={supportEmail}>
+                      <Button className='w-full bg-primary hover:bg-primary/90'>
+                        Contact Support
+                      </Button>
+                    </a>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
@@ -90,8 +110,11 @@ function DashboardContent() {
           <div className='space-y-8'>
             {/* Tutor Dashboard */}
             <div>
-              <h2 className='text-2xl font-bold text-foreground mb-6'>Welcome, {user?.full_name}!</h2>
-              <div className='grid md:grid-cols-3 gap-6'>
+              <h2 className='text-2xl font-bold text-foreground mb-6'>
+                Welcome, {user?.full_name}!
+              </h2>
+
+              <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-6'>
                 <Card className='border-border hover:shadow-lg transition-shadow'>
                   <CardHeader>
                     <CardTitle className='text-primary'>My Profile</CardTitle>
@@ -131,6 +154,24 @@ function DashboardContent() {
                         View Earnings
                       </Button>
                     </Link>
+                  </CardContent>
+                </Card>
+
+                {/* Support Card */}
+                <Card className='border-border hover:shadow-lg transition-shadow'>
+                  <CardHeader>
+                    <CardTitle className='text-primary'>Help & Support</CardTitle>
+                  </CardHeader>
+                  <CardContent className='space-y-4'>
+                    <p className='text-foreground/70'>
+                      For any queries or complaints, feel free to reach out to us.
+                    </p>
+
+                    <a href={supportEmail}>
+                      <Button className='w-full bg-primary hover:bg-primary/90'>
+                        Contact Support
+                      </Button>
+                    </a>
                   </CardContent>
                 </Card>
               </div>

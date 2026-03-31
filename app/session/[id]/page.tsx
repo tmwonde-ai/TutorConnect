@@ -1,14 +1,15 @@
-'use client'  // 🔑 must be first line
+'use client'
 
 import { useParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { ProtectedRoute } from '@/components/protected-route'
 import { ExcaliburnDrawingBoard } from '@/components/excalibur-drawing-board'
+import { DrawingBoard } from '@/components/drawing-board'
 import { SessionChat } from '@/components/session-chat'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useEffect, useState } from 'react'
-import { useSocket } from "@/lib/use-socket"
+import { useSocket } from '@/lib/use-socket' // ✅ ADDED
 
 interface SessionData {
   id: number
@@ -21,6 +22,7 @@ interface SessionData {
   hourly_rate: number
   tutor_name?: string
   student_name?: string
+  latest_snapshot?: string
 }
 
 export default function SessionPage() {
@@ -29,22 +31,20 @@ export default function SessionPage() {
   const sessionId = params.id as string
   const isTutor = user?.role === 'tutor'
 
-if (!process.env.NEXT_PUBLIC_API_URL) {
-  throw new Error("API URL not configured")
-}
+  const { emit, on, off, onConnect, connected } = useSocket() // ✅ ADDED
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  if (!process.env.NEXT_PUBLIC_API_URL) {
+    throw new Error("API URL not configured")
+  }
+
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL
 
   const [sessionData, setSessionData] = useState<SessionData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const { emit, on, off } = useSocket()
-
-  // ================= SNAPSHOT STATE =================
   const [snapshot, setSnapshot] = useState<string | null>(null)
-
-  // ================= TIMER STATE =================
+  const [activeBoard, setActiveBoard] = useState<'excalibur' | 'upload'>('excalibur')
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
   // ================= FETCH SESSION =================
@@ -65,46 +65,48 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL
     }
   }
 
-  // ================= SOCKET CONNECTION =================
-  useEffect(() => {
-    if (!sessionId || !user) return
-
-    emit("join_session", { session_id: sessionId, user_id: user.id })
-
-    const handleNewSnapshot = (data: any) => {
-      setSnapshot(data.snapshot)
-    }
-
-    on("new_snapshot", handleNewSnapshot)
-    on("student_snapshot", handleNewSnapshot)
-
-    return () => {
-      off("new_snapshot", handleNewSnapshot)
-      off("student_snapshot", handleNewSnapshot)
-    }
-  }, [sessionId, user])
-
-  // ================= FETCH ON LOAD =================
   useEffect(() => {
     fetchSession()
   }, [sessionId])
 
-  // ================= TIMER EFFECT =================
+  // ================= ✅ SOCKET SYNC =================
+  useEffect(() => {
+    if (!sessionId || !user) return
+
+    const joinRoom = () => {
+      emit('join_session', {
+        session_id: sessionId,
+        user_id: user.id
+      })
+    }
+
+    if (connected) joinRoom()
+    onConnect(joinRoom)
+
+    const handleSnapshot = (data: any) => {
+      if (!data?.snapshot) return
+      setSnapshot(data.snapshot)
+    }
+
+    on('new_snapshot', handleSnapshot)
+
+    return () => {
+      off('new_snapshot', handleSnapshot)
+    }
+  }, [sessionId, user, connected])
+
+  // ================= TIMER =================
   useEffect(() => {
     if (!sessionData?.started_at) return
 
     const startTime = new Date(sessionData.started_at).getTime()
-
     const interval = setInterval(() => {
-      const now = Date.now()
-      const diff = Math.floor((now - startTime) / 1000)
-      setElapsedSeconds(diff)
+      setElapsedSeconds(Math.floor((Date.now() - startTime) / 1000))
     }, 1000)
 
     return () => clearInterval(interval)
   }, [sessionData?.started_at])
 
-  // ================= FORMAT TIMER =================
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600)
     const m = Math.floor((seconds % 3600) / 60)
@@ -112,7 +114,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL
     return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`
   }
 
-  // ================= START SESSION =================
+  // ================= START / END =================
   const handleStartSession = async () => {
     if (!sessionData) return
     try {
@@ -129,10 +131,10 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL
     }
   }
 
-  // ================= END SESSION =================
   const handleEndSession = async () => {
     if (!sessionData) return
     if (!confirm('End this session? You will not be able to resume it.')) return
+
     try {
       const res = await fetch(`${API_BASE}/sessions/${sessionData.id}/end`, {
         method: 'POST',
@@ -147,9 +149,26 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL
     }
   }
 
-  // ================= LOADING / ERROR STATES =================
+  // ================= SEND SNAPSHOT =================
+  const handleSendSnapshot = async (snap: string) => {
+    try {
+      setSnapshot(snap)
+      if (!sessionData) return
+
+      await fetch(`${API_BASE}/sessions/${sessionData.id}/snapshot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ snapshot: snap, user_id: user?.id })
+      })
+    } catch (err: any) {
+      console.error('Snapshot save error:', err.message)
+    }
+  }
+
+  // ================= STATES =================
   if (loading) return <p className="text-center py-20">Loading session...</p>
-  if (error || !sessionData) return <p className="text-center py-20 text-red-500">{error || 'Session not found'}</p>
+  if (error || !sessionData)
+    return <p className="text-center py-20 text-red-500">{error || 'Session not found'}</p>
 
   // ================= RENDER =================
   return (
@@ -169,7 +188,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL
                   {formatTime(elapsedSeconds)}
                 </div>
               )}
-
               {isTutor && sessionData.status === 'scheduled' && (
                 <Button onClick={handleStartSession}>Start Session</Button>
               )}
@@ -183,35 +201,63 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL
         {/* MAIN */}
         <main className="max-w-full mx-auto px-6 py-8 grid lg:grid-cols-4 gap-8">
 
-          {/* LEFT SIDE */}
+          {/* BOARDS */}
           <div className="lg:col-span-3 flex flex-col space-y-6">
             <Card className="border-border flex-1">
               <CardHeader>
                 <CardTitle className="text-primary">Interactive Board</CardTitle>
               </CardHeader>
-              <CardContent className="h-[600px] p-0">
-                
-                {/* ✅ FIX APPLIED HERE */}
-                <ExcaliburnDrawingBoard
-                  sessionId={sessionData.id}
-                  userId={user?.id || 0}
-                  isTutor={isTutor}
-                />
+              <CardContent className="h-[600px] p-0 flex flex-col">
 
+                <div className="flex gap-2 p-2 border-b border-border">
+                  <Button
+                    variant={activeBoard === 'excalibur' ? 'default' : 'outline'}
+                    onClick={() => setActiveBoard('excalibur')}
+                  >
+                    Excalibur Board
+                  </Button>
+                  <Button
+                    variant={activeBoard === 'upload' ? 'default' : 'outline'}
+                    onClick={() => setActiveBoard('upload')}
+                  >
+                    Upload Board
+                  </Button>
+                </div>
+
+                <div className="flex-1 overflow-hidden">
+                  {activeBoard === 'excalibur' && (
+                    <ExcaliburnDrawingBoard
+                      isTutor={isTutor}
+                      snapshot={snapshot || undefined}
+                      onSendSnapshot={handleSendSnapshot}
+                    />
+                  )}
+                  {activeBoard === 'upload' && (
+                    <DrawingBoard
+                      isTutor={isTutor}
+                      snapshot={snapshot || undefined}
+                      onSendSnapshot={handleSendSnapshot}
+                    />
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* RIGHT SIDEBAR */}
+          {/* SIDEBAR */}
           <div className="lg:col-span-1 flex flex-col space-y-6">
+
+            {/* CHAT */}
             <div className="flex-1">
               <SessionChat
                 sessionId={sessionData.id.toString()}
                 currentUserRole={(user?.role as 'tutor' | 'student') || 'student'}
                 currentUserName={user?.full_name || 'User'}
+                currentUserId={user?.id.toString() || '0'}
               />
             </div>
 
+            {/* SESSION INFO */}
             <Card className="border-border">
               <CardHeader>
                 <CardTitle className="text-primary">Session Info</CardTitle>
@@ -224,12 +270,17 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL
                 <p className="text-sm text-foreground/60">Scheduled At</p>
                 <p className="font-semibold text-foreground">{new Date(sessionData.scheduled_at).toLocaleString()}</p>
                 <p className="text-sm text-foreground/60">Duration</p>
-                <p className="font-semibold text-foreground">{sessionData.duration_minutes ? `${sessionData.duration_minutes} minutes` : '1 hour'}</p>
+                <p className="font-semibold text-foreground">
+                  {sessionData.duration_minutes ? `${sessionData.duration_minutes} minutes` : '1 hour'}
+                </p>
                 <p className="text-sm text-foreground/60">Rate</p>
-                <p className="font-semibold text-foreground">ZMW {(sessionData.hourly_rate ?? 0).toFixed(2)}/hour</p>
+                <p className="font-semibold text-foreground">
+                  ZMW {(sessionData.hourly_rate ?? 0).toFixed(2)}/hour
+                </p>
               </CardContent>
             </Card>
 
+            {/* PARTICIPANTS */}
             <Card className="border-border">
               <CardHeader>
                 <CardTitle className="text-primary">Participants</CardTitle>

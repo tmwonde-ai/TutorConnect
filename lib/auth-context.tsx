@@ -44,12 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  // ⭐ Login function works for regular and admin users
+  // ⭐ Updated login with credentials for CORS
   const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
+        credentials: 'include', // ✅ crucial for CORS with supports_credentials
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // ⭐ Updated register with credentials for consistency
   const register = async (
     email: string,
     password: string,
@@ -81,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
+        credentials: 'include', // ✅ ensures cookies/CORS work if backend sets any
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, full_name: fullName, role }),
       })
@@ -109,12 +112,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('auth_user')
   }
 
-  // Helper to add auth headers in Axios requests
-  // Helper to add auth headers dynamically from localStorage
   const getAuthHeaders = () => {
-  const storedToken = localStorage.getItem('auth_token')
-  return storedToken ? { Authorization: `Bearer ${storedToken}` } : {}
-}
+    const storedToken = localStorage.getItem('auth_token')
+    return storedToken ? { Authorization: `Bearer ${storedToken}` } : {}
+  }
 
   return (
     <AuthContext.Provider
@@ -134,7 +135,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// Hook to access auth context
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {

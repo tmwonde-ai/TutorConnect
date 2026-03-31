@@ -7,7 +7,6 @@ interface UseSocketOptions {
 }
 
 export function useSocket(options: UseSocketOptions = {}) {
-  // Dynamically set the URL based on environment
   const defaultUrl =
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:5000'
@@ -25,12 +24,14 @@ export function useSocket(options: UseSocketOptions = {}) {
       return
     }
 
-    // ✅ Prevent multiple connections
+    // ✅ Prevent duplicate sockets
     if (socketRef.current) return
 
     const socket = io(url, {
       transports: ['websocket', 'polling'],
-      reconnection: true
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000
     })
 
     socketRef.current = socket
@@ -40,27 +41,45 @@ export function useSocket(options: UseSocketOptions = {}) {
       setConnected(true)
     })
 
-    socket.on('disconnect', () => {
-      console.log('[Socket] Disconnected')
+    socket.on('disconnect', (reason) => {
+      console.log('[Socket] Disconnected:', reason)
       setConnected(false)
     })
 
-    // ❌ DO NOT disconnect on unmount
-    return () => {
-      // socket.disconnect() ❌ removed
-    }
+    socket.on('reconnect', (attempt) => {
+      console.log('[Socket] Reconnected after', attempt, 'attempts')
+    })
+
+    socket.on('connect_error', (err) => {
+      console.error('[Socket] Connection error:', err)
+    })
+
+    // ❌ Do NOT disconnect on unmount (important for app-wide socket)
+    return () => {}
   }, [url, disabled])
 
+  // ✅ Emit event
   const emit = useCallback((event: string, data: any) => {
-    socketRef.current?.emit(event, data)
+    if (!socketRef.current) {
+      console.warn('[Socket] Emit failed, no socket')
+      return
+    }
+    socketRef.current.emit(event, data)
   }, [])
 
+  // ✅ Listen to event
   const on = useCallback((event: string, callback: (data: any) => void) => {
     socketRef.current?.on(event, callback)
   }, [])
 
+  // ✅ Remove listener
   const off = useCallback((event: string, callback?: (data: any) => void) => {
     socketRef.current?.off(event, callback)
+  }, [])
+
+  // ✅ NEW: Listen specifically for connect (CRITICAL)
+  const onConnect = useCallback((callback: () => void) => {
+    socketRef.current?.on('connect', callback)
   }, [])
 
   return {
@@ -68,6 +87,7 @@ export function useSocket(options: UseSocketOptions = {}) {
     emit,
     on,
     off,
+    onConnect, // ⭐ THIS is the key fix
     connected
   }
 }

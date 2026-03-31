@@ -1,6 +1,8 @@
 # init_db.py
 
-from app import app, db, User
+from extensions import db
+from models import *  # imports all models
+from app import app
 import os
 
 with app.app_context():

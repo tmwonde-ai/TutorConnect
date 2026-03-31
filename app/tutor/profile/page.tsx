@@ -85,7 +85,7 @@ function TutorProfileContent() {
         if (!token) return
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/tutors/${user.id}/stats`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/tutors/stats`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
