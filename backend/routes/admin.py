@@ -1,7 +1,9 @@
 from flask import Blueprint, jsonify
-from models import Tutor
+from models import Tutor, Student, User
 from extensions import db
 from auth_utils import token_required
+
+from flask import request
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -91,3 +93,53 @@ def get_all_tutors(current_user):
             for t in tutors
         ]
     }), 200
+
+
+
+@admin_bp.route('/all-students', methods=['GET'])
+@token_required
+def get_all_students(current_user):
+
+    if current_user.role != 'admin':
+        return jsonify({'message': 'Admin access required'}), 403
+
+    try:
+        search = request.args.get('search', '')
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 10))
+
+        # 🔗 Join Student with User
+        query = Student.query.join(User)
+
+        # 🔍 Search on User fields
+        if search:
+            query = query.filter(
+                (User.full_name.ilike(f"%{search}%")) |
+                (User.email.ilike(f"%{search}%"))
+            )
+
+        # 📄 Pagination
+        pagination = query.paginate(page=page, per_page=limit, error_out=False)
+
+        students = [
+            {
+                **s.__dict__,
+                "user": s.user.to_dict()
+            }
+            for s in pagination.items
+        ]
+
+        # ⚠️ Remove SQLAlchemy internal state
+        for s in students:
+            s.pop('_sa_instance_state', None)
+
+        return jsonify({
+            'students': students,
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': page
+        }), 200
+
+    except Exception as e:
+        print("Error fetching students:", e)
+        return jsonify({'message': 'Failed to fetch students'}), 500
